@@ -1,0 +1,295 @@
+/*
+ * The display is read from across a room, not from a desk. Everything here is a
+ * consequence of that: large type, high contrast, and no interactive chrome —
+ * the phone is the only input device, so nothing on this screen is clickable.
+ */
+
+:root {
+  --bg: #0b0f16;
+  --fg: #e8edf7;
+  --muted: #8a97ad;
+  --line: #1d2739;
+  --good: #35d07f;
+  --warn: #ffd166;
+  --bad: #ff6b6b;
+  --accent: #2f6fed;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  /* Never intercept input meant for the canvas. */
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+.overlay-center {
+  display: grid;
+  place-items: center;
+  padding: 4vmin;
+}
+
+.overlay-center:empty {
+  display: none;
+}
+
+/* ---- pairing / lobby card ---- */
+
+.panel {
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+  padding: 2.4rem 2.8rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(11, 15, 22, 0.82);
+  backdrop-filter: blur(6px);
+  text-align: center;
+  max-width: min(90vw, 34rem);
+}
+
+.panel-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.panel-title {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 650;
+}
+
+.panel-label {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.panel-url {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  /* A tunnel URL is long and must not stretch the card. */
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+/*
+ * The room code is the fallback when a scan fails, so it is sized to be read and
+ * typed from a distance. Monospace with wide tracking because these characters
+ * are about to be transcribed one at a time.
+ */
+.room-code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: clamp(3rem, 9vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  /* Compensate the trailing letter-space so the code stays optically centred. */
+  text-indent: 0.16em;
+  line-height: 1;
+}
+
+.qr-slot {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  min-width: 320px;
+}
+
+.qr {
+  display: block;
+  width: 320px;
+  height: 320px;
+  border-radius: 12px;
+  /* White quiet zone around the code — scanners need the margin, and the dark
+     page would otherwise eat it. */
+  background: #fff;
+  padding: 8px;
+}
+
+.qr-failed {
+  color: var(--warn);
+  font-size: 0.9rem;
+  max-width: 18rem;
+}
+
+/* ---- status line ---- */
+
+.overlay-status {
+  /* Pinned to row 2 explicitly. `.overlay-center:empty` removes itself from the
+     grid, and without this the status line is promoted into the free 1fr row and
+     jumps from the bottom of the screen to the top the moment a scene clears its
+     centre panel. */
+  grid-row: 2;
+  align-self: end;
+  padding: 1rem 1.4rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.overlay-status[data-tone='good'] {
+  color: var(--good);
+}
+.overlay-status[data-tone='warn'] {
+  color: var(--warn);
+}
+.overlay-status[data-tone='bad'] {
+  color: var(--bad);
+}
+
+/* ---- HUD ---- */
+
+.overlay-hud {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(11, 15, 22, 0.7);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.overlay-hud:empty {
+  display: none;
+}
+
+.hud-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.9rem;
+}
+
+.hud-label {
+  color: var(--muted);
+}
+
+.hud-value {
+  /* Numbers change every frame; tabular figures stop the column jittering. */
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hud-row[data-tone='good'] .hud-value {
+  color: var(--good);
+}
+.hud-row[data-tone='warn'] .hud-value {
+  color: var(--warn);
+}
+.hud-row[data-tone='bad'] .hud-value {
+  color: var(--bad);
+}
+
+/* ---- game menu ---- */
+
+.game-list {
+  display: grid;
+  gap: .5rem;
+  width: 100%;
+}
+
+.game-row {
+  display: grid;
+  gap: .1rem;
+  padding: .75rem .9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: left;
+  /* Reserve the selected state's heavier border now, so highlighting does not
+     shift the row and nudge the whole list. */
+  border-width: 1px;
+}
+
+.game-row[data-selected='true'] {
+  border-color: var(--accent);
+  background: rgba(47, 111, 237, 0.12);
+}
+
+.game-title {
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+.game-blurb {
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.game-grip {
+  font-size: .74rem;
+  color: var(--muted);
+  opacity: .75;
+}
+
+/* ---- results ---- */
+
+.score {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: clamp(3.5rem, 12vw, 7rem);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- audio ---- */
+
+/*
+ * The pairing screen's one line about sound, and it is empty most of the time —
+ * `:empty` collapses it so the panel does not carry a gap for a message that is
+ * not there.
+ *
+ * It says two different things and they want different weight. *Blocked* is an
+ * instruction: the browser will not let this page make a sound until someone
+ * touches this machine, and after pairing nobody will (see `AudioManager`), so
+ * this is the last useful moment to ask. *Muted* is only a reminder that the
+ * preference persisted from a previous session — quieter, because nothing is
+ * wrong.
+ */
+.audio-hint {
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.audio-hint:empty {
+  display: none;
+}
+
+.audio-hint[data-tone='blocked'] {
+  color: var(--warn);
+}
+
+/* A new best. Loud enough to notice from the sofa, brief enough not to shout. */
+.panel-record {
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--good);
+}

@@ -1,0 +1,305 @@
+/*
+ * Controller styling.
+ *
+ * Design constraints specific to a motion controller:
+ *  - Touch targets are large, because the device is being swung, not read.
+ *  - No text selection, no callouts, no overscroll — a long-press mid-game must
+ *    not pop a context menu.
+ *  - Dark by default: this thing gets held at arm's length in a lit room.
+ */
+
+:root {
+  --bg: #0b0e14;
+  --panel: #151a24;
+  --line: #232b3a;
+  --text: #e6ecf5;
+  --muted: #8494ad;
+  --accent: #4da3ff;
+  --good: #46d18a;
+  --warn: #ffb020;
+  --bad: #ff5f57;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * `display: none` from the `hidden` attribute loses to any explicit display on
+ * the same element, so `.app { display: flex }` silently un-hides the panel the
+ * gate is supposed to be covering. Everything below relies on `hidden` working.
+ */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* ------------------------------- the gate -------------------------------- */
+
+.gate {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 40%, #16202f 0%, var(--bg) 70%);
+}
+
+.power {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: #101826;
+  color: var(--accent);
+  font-size: 48px;
+  cursor: pointer;
+  box-shadow: 0 0 0 0 rgb(77 163 255 / 45%);
+  animation: pulse 2.4s ease-out infinite;
+}
+
+.power:active {
+  transform: scale(0.96);
+}
+
+@keyframes pulse {
+  70% {
+    box-shadow: 0 0 0 26px rgb(77 163 255 / 0%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(77 163 255 / 0%);
+  }
+}
+
+/* Respect a reduced-motion preference — the pulse is decoration, not signal. */
+@media (prefers-reduced-motion: reduce) {
+  .power {
+    animation: none;
+  }
+}
+
+.gate-msg {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.gate-sub {
+  margin: 0;
+  max-width: 30ch;
+  color: var(--warn);
+  font-size: 13px;
+}
+
+/* --------------------------------- app ----------------------------------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  padding: 14px;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status {
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status[data-state="online"] {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.status[data-state="connecting"] {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.latency {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.latency.over-budget {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.bar .chip {
+  margin-left: auto;
+}
+
+.chip {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chip:disabled {
+  opacity: 0.45;
+}
+
+.chip.primary {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chip.wide {
+  width: 100%;
+  padding: 14px;
+}
+
+/* ------------------------------- pairing --------------------------------- */
+
+.pairing {
+  display: grid;
+  gap: 8px;
+}
+
+.room-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.room-row {
+  display: flex;
+  gap: 8px;
+}
+
+.room {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  /* 16px minimum, or iOS Safari zooms the page when the field is focused. */
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.room:disabled {
+  opacity: 0.6;
+}
+
+.pair-msg {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* -------------------------------- debug ---------------------------------- */
+
+.debug {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.debug dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 10px;
+}
+
+.debug dt {
+  color: var(--muted);
+}
+
+.debug dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------- pad ----------------------------------- */
+
+.pad {
+  margin-top: auto;
+  display: grid;
+  gap: 14px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+}
+
+.face {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 30px;
+  font-weight: 700;
+  cursor: pointer;
+  /* No transition: a controller button must look pressed on the same frame the
+     finger lands, and an ease-in reads as input lag. */
+}
+
+.face.primary-face {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.face.held {
+  background: var(--accent);
+  color: #04101d;
+  transform: scale(0.95);
+}

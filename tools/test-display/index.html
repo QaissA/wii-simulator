@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Relay Test Display</title>
+    <!--
+      The Layer 2 milestone from `docs/00-overview.md` §Suggested build order:
+      "prove a tilt value moves a dot on a web page."
+
+      THROWAWAY DIAGNOSTIC. This is not `apps/display` and must not grow into it
+      — the real display is Phase 3 (T3.1), built on Three.js with a proper
+      InputAdapter seam. This file exists to answer one question: does a tilt on
+      the phone reach another screen, fast enough to feel connected?
+
+      It deliberately hand-rolls its message parsing instead of importing
+      `@wii/protocol`, so it runs from any static server with no build step at a
+      venue where nothing else is set up. That duplicates the contract, which is
+      exactly what `layer-2-transport.md` §Gotchas warns against — acceptable
+      only because this file is disposable and reads a single field. The real
+      display imports the shared codec.
+    -->
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; height: 100vh; overflow: hidden;
+        background: #0b0e14; color: #e6ecf5;
+        font: 14px/1.4 ui-monospace, Menlo, Consolas, monospace;
+      }
+      #stage { position: absolute; inset: 0; }
+      #dot {
+        position: absolute; width: 84px; height: 84px; margin: -42px 0 0 -42px;
+        border-radius: 50%; background: #4da3ff;
+        box-shadow: 0 0 60px rgb(77 163 255 / 55%);
+        left: 50%; top: 50%;
+        /* No CSS transition: this page exists to measure responsiveness, and an
+           eased transition would disguise exactly the lag we are looking for. */
+      }
+      #dot.hit { background: #ffb020; box-shadow: 0 0 90px rgb(255 176 32 / 70%); }
+      #hud {
+        position: absolute; top: 0; left: 0; padding: 16px;
+        display: grid; grid-template-columns: auto auto; gap: 4px 14px;
+        background: rgb(11 14 20 / 82%); border-bottom-right-radius: 12px;
+      }
+      #hud b { color: #8494ad; font-weight: 400; }
+      .over { color: #ff5f57; font-weight: 700; }
+      #room {
+        position: absolute; top: 16px; right: 16px; padding: 10px 18px;
+        border: 1px solid #4da3ff; border-radius: 10px; color: #4da3ff;
+        font-size: 30px; font-weight: 700; letter-spacing: 0.3em;
+      }
+      #gesture {
+        position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+        font-size: 44px; font-weight: 700; opacity: 0; transition: opacity .35s;
+      }
+      #gesture.show { opacity: 1; transition: none; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"><div id="dot"></div></div>
+    <div id="room">----</div>
+    <div id="gesture"></div>
+    <div id="hud">
+      <b>link</b><span id="v-link">offline</span>
+      <b>tilt b/g</b><span id="v-tilt">—</span>
+      <b>frames/s</b><span id="v-fps">0</span>
+      <b>frame age</b><span id="v-age">—</span>
+      <b>buttons</b><span id="v-btn">—</span>
+    </div>
+
+    <script type="module">
+      // ---- config ---------------------------------------------------------
+      // ?room=7QK2&relay=ws://host:8081
+      const params = new URLSearchParams(location.search);
+      const room = (params.get('room') ?? '7QK2').toUpperCase();
+      const relay = params.get('relay') ?? `ws://${location.hostname || '127.0.0.1'}:8081`;
+
+      const $ = (id) => document.getElementById(id);
+      $('room').textContent = room;
+
+      const dot = $('dot');
+      const stage = $('stage');
+
+      let frames = 0;
+      let fps = 0;
+      let lastAge = null;
+      let target = { x: 0.5, y: 0.5 };
+
+      setInterval(() => { fps = frames; frames = 0; $('v-fps').textContent = fps; }, 1000);
+
+      // ---- link -----------------------------------------------------------
+      let socket = null;
+      let backoff = 250;
+
+      function setLink(text) { $('v-link').textContent = text; }
+
+      function connect() {
+        setLink('connecting');
+        socket = new WebSocket(relay);
+
+        socket.onopen = () => {
+          backoff = 250;
+          setLink('online');
+          socket.send(JSON.stringify({ type: 'join', room }));
+        };
+
+        socket.onmessage = (ev) => {
+          let msg;
+          try { msg = JSON.parse(ev.data); } catch { return; }
+          if (!msg || typeof msg !== 'object') return;
+
+          if (msg.type === 'state') return onState(msg);
+          if (msg.type === 'gesture') return onGesture(msg.name);
+          if (msg.type === 'button') return onButton(msg);
+        };
+
+        socket.onclose = () => {
+          setLink('offline');
+          socket = null;
+          setTimeout(connect, backoff);
+          backoff = Math.min(backoff * 2, 8000);
+        };
+
+        socket.onerror = () => { /* onclose follows */ };
+      }
+
+      // ---- input ----------------------------------------------------------
+      const held = new Set();
+
+      function onState(msg) {
+        frames++;
+        const o = msg.o ?? { b: 0, g: 0 };
+
+        // Map tilt to screen position. ±45° covers the full width/height, which
+        // is a comfortable range to hold; beyond that it just clamps.
+        const clamp = (v) => Math.max(0, Math.min(1, v));
+        target = {
+          x: clamp(0.5 + (o.g ?? 0) / 90),
+          y: clamp(0.5 + (o.b ?? 0) / 90),
+        };
+
+        $('v-tilt').textContent = `${(o.b ?? 0).toFixed(1)} / ${(o.g ?? 0).toFixed(1)}`;
+
+        // Frame age needs both clocks to agree, which this page does not attempt
+        // — it shows the raw delta so a wildly wrong value is visibly wrong
+        // rather than quietly plausible.
+        lastAge = Date.now() - msg.t;
+      }
+
+      function onButton(msg) {
+        if (msg.down) held.add(msg.name); else held.delete(msg.name);
+        $('v-btn').textContent = held.size ? [...held].join(' ') : '—';
+        dot.classList.toggle('hit', held.size > 0);
+      }
+
+      let gestureTimer = null;
+      function onGesture(name) {
+        const el = $('gesture');
+        el.textContent = name ?? 'gesture';
+        el.classList.add('show');
+        clearTimeout(gestureTimer);
+        gestureTimer = setTimeout(() => el.classList.remove('show'), 60);
+      }
+
+      // ---- render ---------------------------------------------------------
+      // Rendering on rAF rather than per frame decouples the 50 Hz input stream
+      // from the display's refresh — the same split the real GameLoop uses.
+      let shown = { x: 0.5, y: 0.5 };
+      function render() {
+        requestAnimationFrame(render);
+        // Light smoothing only. Too much and this stops measuring the transport.
+        shown.x += (target.x - shown.x) * 0.35;
+        shown.y += (target.y - shown.y) * 0.35;
+        dot.style.left = `${shown.x * stage.clientWidth}px`;
+        dot.style.top = `${shown.y * stage.clientHeight}px`;
+
+        const age = $('v-age');
+        if (lastAge === null) { age.textContent = '—'; }
+        else {
+          age.textContent = `${lastAge} ms`;
+          age.classList.toggle('over', lastAge > 80); // LATENCY_BUDGET_MS.max
+        }
+      }
+
+      connect();
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>

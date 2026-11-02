@@ -1,0 +1,20 @@
+# fly.toml app configuration file generated for wii-relay-qaiss on 2026-11-02T16:14:17Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'wii-relay-qaiss'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[http_service]
+  internal_port = 8081
+  force_https = true
+  auto_stop_machines = 'off'
+  min_machines_running = 1
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'

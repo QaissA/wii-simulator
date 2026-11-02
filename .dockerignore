@@ -1,0 +1,7 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+tools/dev-cert/certs
+tools/display-check/.chrome-profile*
+.git
+.env*

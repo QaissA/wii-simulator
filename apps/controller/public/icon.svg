@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Motion controller">
+  <rect width="512" height="512" rx="112" fill="#0b0e14"/>
+  <rect x="196" y="96" width="120" height="320" rx="46" fill="#151a24" stroke="#4da3ff" stroke-width="12"/>
+  <circle cx="256" cy="182" r="26" fill="#4da3ff"/>
+  <rect x="238" y="242" width="36" height="36" rx="8" fill="#e6ecf5"/>
+  <rect x="238" y="300" width="36" height="36" rx="8" fill="#8494ad"/>
+  <path d="M132 214c-22 26-22 84 0 110M380 214c22 26 22 84 0 110"
+        fill="none" stroke="#46d18a" stroke-width="14" stroke-linecap="round"/>
+</svg>

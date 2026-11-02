@@ -1,0 +1,34 @@
+{
+  "name": "wii-simulator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "cert": "node tools/dev-cert/generate.mjs",
+    "cert:serve": "node tools/dev-cert/serve-ca.mjs",
+    "dev:relay": "pnpm --filter @wii/server dev",
+    "dev:controller": "pnpm --filter @wii/controller dev",
+    "dev:display": "pnpm --filter @wii/display dev",
+    "check": "node tools/display-check/index.mjs",
+    "check:e2e": "node tools/display-check/e2e.mjs",
+    "check:fruit": "node tools/display-check/fruit-slash.mjs",
+    "check:shooter": "node tools/display-check/star-fighter.mjs",
+    "fake-controller": "node tools/fake-controller/index.mjs",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r exec rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "packageManager": "pnpm@10.32.1"
+}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport-fit=cover + user-scalable=no: this is a game controller, not a
+         document. A pinch-zoom mid-swing would be a bug, not a feature. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#0b0e14" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./src/styles.css" />
+    <title>Motion Controller</title>
+  </head>
+  <body>
+    <!-- PermissionGate. iOS only grants motion access from inside a real tap
+         handler, so this overlay is load-bearing, not decoration. -->
+    <div id="gate" class="gate">
+      <button id="gate-btn" class="power" type="button" aria-label="Tap to start">
+        <span class="power-glyph" aria-hidden="true">⏻</span>
+      </button>
+      <p id="gate-msg" class="gate-msg">Tap to start</p>
+      <p id="gate-sub" class="gate-sub"></p>
+    </div>
+
+    <main id="app" class="app" hidden>
+      <header class="bar">
+        <span id="status" class="status" data-state="offline">local</span>
+        <span id="latency" class="latency"></span>
+        <button id="debug-toggle" class="chip" type="button">Debug</button>
+      </header>
+
+      <section id="pairing" class="pairing">
+        <label class="room-label" for="room">Room code</label>
+        <div class="room-row">
+          <input
+            id="room"
+            class="room"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            maxlength="4"
+            placeholder="7QK2"
+          />
+          <button id="connect" class="chip primary" type="button">Connect</button>
+        </div>
+        <p id="pair-msg" class="pair-msg"></p>
+      </section>
+
+      <section id="debug" class="debug" hidden>
+        <dl>
+          <dt>orientation</dt><dd id="dbg-o">—</dd>
+          <dt>accel</dt><dd id="dbg-acc">—</dd>
+          <dt>rotation</dt><dd id="dbg-rot">—</dd>
+          <dt>|accel|</dt><dd id="dbg-mag">—</dd>
+          <dt>peak</dt><dd id="dbg-peak">—</dd>
+          <dt>send hz</dt><dd id="dbg-hz">—</dd>
+          <dt>gesture</dt><dd id="dbg-gesture">—</dd>
+          <dt>source</dt><dd id="dbg-source">—</dd>
+        </dl>
+        <button id="dump-trace" class="chip" type="button">Export trace</button>
+      </section>
+
+      <section class="pad">
+        <button id="calibrate" class="chip wide" type="button">Calibrate</button>
+        <div class="buttons">
+          <button class="face" data-button="b" type="button">B</button>
+          <button class="face primary-face" data-button="a" type="button">A</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

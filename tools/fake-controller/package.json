@@ -1,0 +1,13 @@
+{
+  "name": "@wii/fake-controller",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@wii/protocol": "workspace:*",
+    "ws": "^8.18.0"
+  }
+}

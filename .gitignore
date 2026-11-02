@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+
+# Throwaway Chrome profiles created by tools/display-check.
+tools/display-check/.chrome-profile*/
+# Screenshots the browser checks write next to themselves.
+tools/display-check/*.png
